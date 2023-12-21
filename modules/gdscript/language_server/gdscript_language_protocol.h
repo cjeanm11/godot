@@ -46,6 +46,7 @@
 #error "Can't build GDScript LSP without JSONRPC module."
 #endif
 
+#define HEADER_BOM_OFFSET 16
 #define LSP_MAX_BUFFER_SIZE 4194304
 #define LSP_MAX_CLIENTS 8
 

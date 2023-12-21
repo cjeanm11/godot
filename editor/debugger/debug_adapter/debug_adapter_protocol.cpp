@@ -68,7 +68,7 @@ Error DAPeer::handle_data() {
 				r[l - 3] = '\0'; // Null terminate to read string
 				String header;
 				header.parse_utf8(r);
-				content_length = header.substr(16).to_int();
+				content_length = header.substr(HEADER_BOM_OFFSET).to_int();
 				has_header = true;
 				req_pos = 0;
 				break;
