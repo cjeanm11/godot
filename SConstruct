@@ -56,6 +56,7 @@ import methods
 import glsl_builders
 import gles3_builders
 import scu_builders
+import zig_builders
 from platform_methods import architectures, architecture_aliases, generate_export_icons
 
 if ARGUMENTS.get("target", "editor") == "editor":
@@ -159,6 +160,8 @@ env_base.SConsignFile(".sconsign{0}.dblite".format(pickle.HIGHEST_PROTOCOL))
 customs = ["custom.py"]
 
 profile = ARGUMENTS.get("profile", "")
+use_zig = ARGUMENTS.get('use_zig', False)
+
 if profile:
     if os.path.isfile(profile):
         customs.append(profile)
@@ -183,6 +186,7 @@ opts.Add(BoolVariable("separate_debug_symbols", "Extract debugging symbols to a 
 opts.Add(EnumVariable("lto", "Link-time optimization (production builds)", "none", ("none", "auto", "thin", "full")))
 opts.Add(BoolVariable("production", "Set defaults to build Godot for use in production", False))
 opts.Add(BoolVariable("generate_apk", "Generate an APK/AAB after building Android library by calling Gradle", False))
+opts.Add(BoolVariable("use_zig", "enable the Zig compiler for building.", False))
 
 # Components
 opts.Add(BoolVariable("deprecated", "Enable compatibility code for deprecated and removed features", True))
@@ -266,6 +270,7 @@ opts.Add("CCFLAGS", "Custom flags for both the C and C++ compilers")
 opts.Add("CFLAGS", "Custom flags for the C compiler")
 opts.Add("CXXFLAGS", "Custom flags for the C++ compiler")
 opts.Add("LINKFLAGS", "Custom flags for the linker")
+opts.Add("ZIG_BUILD", "enable zig build")
 
 # Update the environment to have all above options defined
 # in following code (especially platform and custom_modules).
@@ -947,7 +952,12 @@ if selected_platform in platform_list:
             suffix="glsl.gen.h",
             src_suffix=".glsl",
         ),
+        # TODO something like "ZIG_BUILD": env.Builder(action=build_with_zig(env["arch"],env["target"]))
     }
+
+    if use_zig:
+        zig_builders.build_with_zig(env["arch"], env["target"])
+
     env.Append(BUILDERS=GLSL_BUILDERS)
 
     scons_cache_path = os.environ.get("SCONS_CACHE")
