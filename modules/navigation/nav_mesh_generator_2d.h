@@ -31,6 +31,8 @@
 #ifndef NAV_MESH_GENERATOR_2D_H
 #define NAV_MESH_GENERATOR_2D_H
 
+#ifdef CLIPPER2_ENABLED
+
 #include "core/object/class_db.h"
 #include "core/object/worker_thread_pool.h"
 
@@ -92,9 +94,12 @@ public:
 	static void parse_source_geometry_data(Ref<NavigationPolygon> p_navigation_mesh, Ref<NavigationMeshSourceGeometryData2D> p_source_geometry_data, Node *p_root_node, const Callable &p_callback = Callable());
 	static void bake_from_source_geometry_data(Ref<NavigationPolygon> p_navigation_mesh, Ref<NavigationMeshSourceGeometryData2D> p_source_geometry_data, const Callable &p_callback = Callable());
 	static void bake_from_source_geometry_data_async(Ref<NavigationPolygon> p_navigation_mesh, Ref<NavigationMeshSourceGeometryData2D> p_source_geometry_data, const Callable &p_callback = Callable());
+	static bool is_baking(Ref<NavigationPolygon> p_navigation_polygon);
 
 	NavMeshGenerator2D();
 	~NavMeshGenerator2D();
 };
+
+#endif // CLIPPER2_ENABLED
 
 #endif // NAV_MESH_GENERATOR_2D_H

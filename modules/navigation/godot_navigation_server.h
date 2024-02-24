@@ -80,7 +80,7 @@ class GodotNavigationServer : public NavigationServer3D {
 
 	bool active = true;
 	LocalVector<NavMap *> active_maps;
-	LocalVector<uint32_t> active_maps_update_id;
+	LocalVector<uint32_t> active_maps_iteration_id;
 
 #ifndef _3D_DISABLED
 	NavMeshGenerator3D *navmesh_generator_3d = nullptr;
@@ -117,6 +117,9 @@ public:
 	COMMAND_2(map_set_cell_height, RID, p_map, real_t, p_cell_height);
 	virtual real_t map_get_cell_height(RID p_map) const override;
 
+	COMMAND_2(map_set_merge_rasterizer_cell_scale, RID, p_map, float, p_value);
+	virtual float map_get_merge_rasterizer_cell_scale(RID p_map) const override;
+
 	COMMAND_2(map_set_use_edge_connections, RID, p_map, bool, p_enabled);
 	virtual bool map_get_use_edge_connections(RID p_map) const override;
 
@@ -139,6 +142,7 @@ public:
 	virtual TypedArray<RID> map_get_obstacles(RID p_map) const override;
 
 	virtual void map_force_update(RID p_map) override;
+	virtual uint32_t map_get_iteration_id(RID p_map) const override;
 
 	virtual Vector3 map_get_random_point(RID p_map, uint32_t p_navigation_layers, bool p_uniformly) const override;
 
@@ -258,6 +262,7 @@ public:
 	virtual void parse_source_geometry_data(const Ref<NavigationMesh> &p_navigation_mesh, const Ref<NavigationMeshSourceGeometryData3D> &p_source_geometry_data, Node *p_root_node, const Callable &p_callback = Callable()) override;
 	virtual void bake_from_source_geometry_data(const Ref<NavigationMesh> &p_navigation_mesh, const Ref<NavigationMeshSourceGeometryData3D> &p_source_geometry_data, const Callable &p_callback = Callable()) override;
 	virtual void bake_from_source_geometry_data_async(const Ref<NavigationMesh> &p_navigation_mesh, const Ref<NavigationMeshSourceGeometryData3D> &p_source_geometry_data, const Callable &p_callback = Callable()) override;
+	virtual bool is_baking_navigation_mesh(Ref<NavigationMesh> p_navigation_mesh) const override;
 
 	COMMAND_1(free, RID, p_object);
 

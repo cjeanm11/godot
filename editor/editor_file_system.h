@@ -165,7 +165,7 @@ class EditorFileSystem : public Node {
 		EditorFileSystemDirectory::FileInfo *new_file = nullptr;
 	};
 
-	bool use_threads = true;
+	bool use_threads = false;
 	Thread thread;
 	static void _thread_func(void *_userdata);
 
@@ -231,7 +231,7 @@ class EditorFileSystem : public Node {
 
 	Thread thread_sources;
 	bool scanning_changes = false;
-	bool scanning_changes_done = false;
+	SafeFlag scanning_changes_done;
 
 	static void _thread_func_sources(void *_userdata);
 

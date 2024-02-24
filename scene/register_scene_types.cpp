@@ -31,7 +31,6 @@
 #include "register_scene_types.h"
 
 #include "core/config/project_settings.h"
-#include "core/extension/gdextension_manager.h"
 #include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "scene/2d/animated_sprite_2d.h"
@@ -78,7 +77,6 @@
 #include "scene/animation/animation_node_state_machine.h"
 #include "scene/animation/animation_player.h"
 #include "scene/animation/animation_tree.h"
-#include "scene/animation/root_motion_view.h"
 #include "scene/animation/tween.h"
 #include "scene/audio/audio_stream_player.h"
 #include "scene/debugger/scene_debugger.h"
@@ -137,6 +135,7 @@
 #include "scene/main/multiplayer_api.h"
 #include "scene/main/resource_preloader.h"
 #include "scene/main/scene_tree.h"
+#include "scene/main/status_indicator.h"
 #include "scene/main/timer.h"
 #include "scene/main/viewport.h"
 #include "scene/main/window.h"
@@ -147,24 +146,19 @@
 #include "scene/resources/audio_stream_wav.h"
 #include "scene/resources/bit_map.h"
 #include "scene/resources/bone_map.h"
-#include "scene/resources/box_shape_3d.h"
 #include "scene/resources/camera_attributes.h"
 #include "scene/resources/camera_texture.h"
 #include "scene/resources/capsule_shape_2d.h"
-#include "scene/resources/capsule_shape_3d.h"
 #include "scene/resources/circle_shape_2d.h"
+#include "scene/resources/compositor.h"
 #include "scene/resources/compressed_texture.h"
 #include "scene/resources/concave_polygon_shape_2d.h"
-#include "scene/resources/concave_polygon_shape_3d.h"
 #include "scene/resources/convex_polygon_shape_2d.h"
-#include "scene/resources/convex_polygon_shape_3d.h"
 #include "scene/resources/curve_texture.h"
-#include "scene/resources/cylinder_shape_3d.h"
 #include "scene/resources/environment.h"
 #include "scene/resources/font.h"
 #include "scene/resources/gradient.h"
 #include "scene/resources/gradient_texture.h"
-#include "scene/resources/height_map_shape_3d.h"
 #include "scene/resources/image_texture.h"
 #include "scene/resources/immediate_mesh.h"
 #include "scene/resources/label_settings.h"
@@ -182,12 +176,10 @@
 #include "scene/resources/placeholder_textures.h"
 #include "scene/resources/polygon_path_finder.h"
 #include "scene/resources/portable_compressed_texture.h"
-#include "scene/resources/primitive_meshes.h"
 #include "scene/resources/rectangle_shape_2d.h"
 #include "scene/resources/resource_format_text.h"
 #include "scene/resources/segment_shape_2d.h"
 #include "scene/resources/separation_ray_shape_2d.h"
-#include "scene/resources/separation_ray_shape_3d.h"
 #include "scene/resources/shader_include.h"
 #include "scene/resources/skeleton_modification_2d.h"
 #include "scene/resources/skeleton_modification_2d_ccdik.h"
@@ -201,7 +193,6 @@
 #include "scene/resources/skeleton_profile.h"
 #include "scene/resources/sky.h"
 #include "scene/resources/sky_material.h"
-#include "scene/resources/sphere_shape_3d.h"
 #include "scene/resources/style_box.h"
 #include "scene/resources/style_box_flat.h"
 #include "scene/resources/style_box_line.h"
@@ -221,9 +212,7 @@
 #include "scene/resources/visual_shader_particle_nodes.h"
 #include "scene/resources/visual_shader_sdf_nodes.h"
 #include "scene/resources/world_2d.h"
-#include "scene/resources/world_3d.h"
 #include "scene/resources/world_boundary_shape_2d.h"
-#include "scene/resources/world_boundary_shape_3d.h"
 #include "scene/scene_string_names.h"
 #include "scene/theme/theme_db.h"
 
@@ -272,11 +261,24 @@
 #include "scene/3d/visible_on_screen_notifier_3d.h"
 #include "scene/3d/voxel_gi.h"
 #include "scene/3d/world_environment.h"
+#include "scene/3d/xr_face_modifier_3d.h"
+#include "scene/3d/xr_hand_modifier_3d.h"
 #include "scene/3d/xr_nodes.h"
-#include "scene/resources/environment.h"
+#include "scene/animation/root_motion_view.h"
+#include "scene/resources/box_shape_3d.h"
+#include "scene/resources/capsule_shape_3d.h"
+#include "scene/resources/concave_polygon_shape_3d.h"
+#include "scene/resources/convex_polygon_shape_3d.h"
+#include "scene/resources/cylinder_shape_3d.h"
 #include "scene/resources/fog_material.h"
+#include "scene/resources/height_map_shape_3d.h"
 #include "scene/resources/importer_mesh.h"
 #include "scene/resources/mesh_library.h"
+#include "scene/resources/primitive_meshes.h"
+#include "scene/resources/separation_ray_shape_3d.h"
+#include "scene/resources/sphere_shape_3d.h"
+#include "scene/resources/world_3d.h"
+#include "scene/resources/world_boundary_shape_3d.h"
 #endif // _3D_DISABLED
 
 static Ref<ResourceFormatSaverText> resource_saver_text;
@@ -340,6 +342,8 @@ void register_scene_types() {
 	GDREGISTER_CLASS(SubViewport);
 	GDREGISTER_CLASS(ViewportTexture);
 
+	GDREGISTER_VIRTUAL_CLASS(CompositorEffect);
+
 	GDREGISTER_ABSTRACT_CLASS(MultiplayerPeer);
 	GDREGISTER_CLASS(MultiplayerPeerExtension);
 	GDREGISTER_ABSTRACT_CLASS(MultiplayerAPI);
@@ -351,6 +355,8 @@ void register_scene_types() {
 	GDREGISTER_CLASS(CanvasModulate);
 	GDREGISTER_CLASS(ResourcePreloader);
 	GDREGISTER_CLASS(Window);
+
+	GDREGISTER_CLASS(StatusIndicator);
 
 	/* REGISTER GUI */
 
@@ -516,6 +522,8 @@ void register_scene_types() {
 	GDREGISTER_CLASS(XRController3D);
 	GDREGISTER_CLASS(XRAnchor3D);
 	GDREGISTER_CLASS(XROrigin3D);
+	GDREGISTER_CLASS(XRHandModifier3D);
+	GDREGISTER_CLASS(XRFaceModifier3D);
 	GDREGISTER_CLASS(MeshInstance3D);
 	GDREGISTER_CLASS(OccluderInstance3D);
 	GDREGISTER_ABSTRACT_CLASS(Occluder3D);
@@ -783,6 +791,7 @@ void register_scene_types() {
 	GDREGISTER_CLASS(TileMapPattern);
 	GDREGISTER_CLASS(TileData);
 	GDREGISTER_CLASS(TileMap);
+	GDREGISTER_ABSTRACT_CLASS(TileMapLayerGroup);
 	GDREGISTER_CLASS(ParallaxBackground);
 	GDREGISTER_CLASS(ParallaxLayer);
 	GDREGISTER_CLASS(TouchScreenButton);
@@ -855,12 +864,13 @@ void register_scene_types() {
 	GDREGISTER_CLASS(WorldBoundaryShape3D);
 	GDREGISTER_CLASS(ConvexPolygonShape3D);
 	GDREGISTER_CLASS(ConcavePolygonShape3D);
+	GDREGISTER_CLASS(World3D);
 
 	OS::get_singleton()->yield(); // may take time to init
 #endif // _3D_DISABLED
 
 	GDREGISTER_CLASS(PhysicsMaterial);
-	GDREGISTER_CLASS(World3D);
+	GDREGISTER_CLASS(Compositor);
 	GDREGISTER_CLASS(Environment);
 	GDREGISTER_VIRTUAL_CLASS(CameraAttributes);
 	GDREGISTER_CLASS(CameraAttributesPhysical);
@@ -1184,7 +1194,9 @@ void register_scene_types() {
 	}
 
 	if (RenderingServer::get_singleton()) {
-		ColorPicker::init_shaders(); // RenderingServer needs to exist for this to succeed.
+		// RenderingServer needs to exist for this to succeed.
+		ColorPicker::init_shaders();
+		GraphEdit::init_shaders();
 	}
 
 	SceneDebugger::initialize();
@@ -1236,6 +1248,7 @@ void unregister_scene_types() {
 	ParticleProcessMaterial::finish_shaders();
 	CanvasItemMaterial::finish_shaders();
 	ColorPicker::finish_shaders();
+	GraphEdit::finish_shaders();
 	SceneStringNames::free();
 
 	OS::get_singleton()->benchmark_end_measure("Scene", "Unregister Types");

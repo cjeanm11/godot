@@ -187,6 +187,7 @@ void DisplayServerWeb::_key_callback(const String &p_key_event_code, const Strin
 
 	Key keycode = dom_code2godot_scancode(p_key_event_code.utf8().get_data(), p_key_event_key.utf8().get_data(), false);
 	Key scancode = dom_code2godot_scancode(p_key_event_code.utf8().get_data(), p_key_event_key.utf8().get_data(), true);
+	KeyLocation location = dom_code2godot_key_location(p_key_event_code.utf8().get_data());
 
 	DisplayServerWeb::KeyEvent ke;
 
@@ -197,6 +198,7 @@ void DisplayServerWeb::_key_callback(const String &p_key_event_code, const Strin
 	ke.physical_keycode = scancode;
 	ke.key_label = fix_key_label(c, keycode);
 	ke.unicode = fix_unicode(c);
+	ke.location = location;
 	ke.mod = p_modifiers;
 
 	if (ds->key_event_pos >= ds->key_event_buffer.size()) {
@@ -326,7 +328,9 @@ void DisplayServerWeb::_mouse_move_callback(double p_x, double p_y, double p_rel
 	ev->set_global_position(pos);
 
 	ev->set_relative(Vector2(p_rel_x, p_rel_y));
+	ev->set_relative_screen_position(ev->get_relative());
 	ev->set_velocity(Input::get_singleton()->get_last_mouse_velocity());
+	ev->set_screen_velocity(ev->get_velocity());
 
 	Input::get_singleton()->parse_input_event(ev);
 }
@@ -705,6 +709,7 @@ void DisplayServerWeb::_touch_callback(int p_type, int p_count) {
 
 			Point2 &prev = ds->touches[i];
 			ev->set_relative(ev->get_position() - prev);
+			ev->set_relative_screen_position(ev->get_relative());
 			prev = ev->get_position();
 
 			Input::get_singleton()->parse_input_event(ev);
@@ -1383,6 +1388,7 @@ void DisplayServerWeb::process_events() {
 			ev->set_physical_keycode(ke.physical_keycode);
 			ev->set_key_label(ke.key_label);
 			ev->set_unicode(ke.unicode);
+			ev->set_location(ke.location);
 			if (ke.raw) {
 				dom2godot_mod(ev, ke.mod, ke.keycode);
 			}

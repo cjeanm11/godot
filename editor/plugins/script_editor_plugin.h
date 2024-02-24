@@ -38,6 +38,7 @@
 #include "scene/resources/syntax_highlighter.h"
 #include "scene/resources/text_file.h"
 
+class CodeTextEditor;
 class EditorFileDialog;
 class EditorHelpSearch;
 class FindReplaceBar;
@@ -192,6 +193,7 @@ public:
 	virtual void set_find_replace_bar(FindReplaceBar *p_bar) = 0;
 
 	virtual Control *get_base_editor() const = 0;
+	virtual CodeTextEditor *get_code_editor() const = 0;
 
 	virtual void validate() = 0;
 
@@ -306,6 +308,8 @@ class ScriptEditor : public PanelContainer {
 
 	String current_theme;
 
+	float zoom_factor = 1.0f;
+
 	TextureRect *script_icon = nullptr;
 	Label *script_name_label = nullptr;
 
@@ -382,6 +386,8 @@ class ScriptEditor : public PanelContainer {
 
 	bool pending_auto_reload;
 	bool auto_reload_running_scripts;
+	bool reload_all_scripts = false;
+	Vector<String> script_paths_to_reload;
 	void _live_auto_reload_running_scripts();
 
 	void _update_selected_editor_menu();
@@ -418,6 +424,7 @@ class ScriptEditor : public PanelContainer {
 	void _save_editor_state(ScriptEditorBase *p_editor);
 	void _save_layout();
 	void _editor_settings_changed();
+	void _apply_editor_settings();
 	void _filesystem_changed();
 	void _files_moved(const String &p_old_file, const String &p_new_file);
 	void _file_removed(const String &p_file);
@@ -489,6 +496,8 @@ class ScriptEditor : public PanelContainer {
 	void _start_find_in_files(bool with_replace);
 	void _on_find_in_files_modified_files(PackedStringArray paths);
 
+	void _set_zoom_factor(float p_zoom_factor);
+
 	void _window_changed(bool p_visible);
 
 	static void _open_script_request(const String &p_path);
@@ -542,7 +551,8 @@ public:
 	void clear_docs_from_script(const Ref<Script> &p_script);
 	void update_docs_from_script(const Ref<Script> &p_script);
 
-	void trigger_live_script_reload();
+	void trigger_live_script_reload(const String &p_script_path);
+	void trigger_live_script_reload_all();
 
 	bool can_take_away_focus() const;
 

@@ -257,7 +257,7 @@ void EditorFileSystem::_scan_filesystem() {
 				if (l.begins_with("::")) {
 					Vector<String> split = l.split("::");
 					ERR_CONTINUE(split.size() != 3);
-					String name = split[1];
+					const String &name = split[1];
 
 					cpath = name;
 
@@ -290,7 +290,7 @@ void EditorFileSystem::_scan_filesystem() {
 					if (deps.length()) {
 						Vector<String> dp = deps.split("<>");
 						for (int i = 0; i < dp.size(); i++) {
-							String path = dp[i];
+							const String &path = dp[i];
 							fc.deps.push_back(path);
 						}
 					}
@@ -1183,7 +1183,7 @@ void EditorFileSystem::_thread_func_sources(void *_userdata) {
 		sp.low = 0;
 		efs->_scan_fs_changes(efs->filesystem, sp);
 	}
-	efs->scanning_changes_done = true;
+	efs->scanning_changes_done.set();
 }
 
 void EditorFileSystem::scan_changes() {
@@ -1197,7 +1197,7 @@ void EditorFileSystem::scan_changes() {
 	_update_extensions();
 	sources_changed.clear();
 	scanning_changes = true;
-	scanning_changes_done = false;
+	scanning_changes_done.clear();
 
 	if (!use_threads) {
 		if (filesystem) {
@@ -1216,7 +1216,7 @@ void EditorFileSystem::scan_changes() {
 			}
 		}
 		scanning_changes = false;
-		scanning_changes_done = true;
+		scanning_changes_done.set();
 		emit_signal(SNAME("sources_changed"), sources_changed.size() > 0);
 	} else {
 		ERR_FAIL_COND(thread_sources.is_started());
@@ -1269,7 +1269,7 @@ void EditorFileSystem::_notification(int p_what) {
 				bool done_importing = false;
 
 				if (scanning_changes) {
-					if (scanning_changes_done) {
+					if (scanning_changes_done.is_set()) {
 						set_process(false);
 
 						if (thread_sources.is_started()) {
@@ -2354,7 +2354,11 @@ void EditorFileSystem::reimport_files(const Vector<String> &p_files) {
 
 	reimport_files.sort();
 
+#ifdef THREADS_ENABLED
 	bool use_multiple_threads = GLOBAL_GET("editor/import/use_multiple_threads");
+#else
+	bool use_multiple_threads = false;
+#endif
 
 	int from = 0;
 	for (int i = 0; i < reimport_files.size(); i++) {
@@ -2436,7 +2440,13 @@ void EditorFileSystem::reimport_files(const Vector<String> &p_files) {
 
 Error EditorFileSystem::reimport_append(const String &p_file, const HashMap<StringName, Variant> &p_custom_options, const String &p_custom_importer, Variant p_generator_parameters) {
 	ERR_FAIL_COND_V_MSG(!importing, ERR_INVALID_PARAMETER, "Can only append files to import during a current reimport process.");
-	return _reimport_file(p_file, p_custom_options, p_custom_importer, &p_generator_parameters);
+	Error ret = _reimport_file(p_file, p_custom_options, p_custom_importer, &p_generator_parameters);
+
+	// Emit the resource_reimported signal for the single file we just reimported.
+	Vector<String> reloads;
+	reloads.append(p_file);
+	emit_signal(SNAME("resources_reimported"), reloads);
+	return ret;
 }
 
 Error EditorFileSystem::_resource_import(const String &p_path) {
@@ -2674,6 +2684,10 @@ void EditorFileSystem::remove_import_format_support_query(Ref<EditorFileSystemIm
 }
 
 EditorFileSystem::EditorFileSystem() {
+#ifdef THREADS_ENABLED
+	use_threads = true;
+#endif
+
 	ResourceLoader::import = _resource_import;
 	reimport_on_missing_imported_files = GLOBAL_GET("editor/import/reimport_missing_imported_files");
 	singleton = this;
@@ -2687,7 +2701,7 @@ EditorFileSystem::EditorFileSystem() {
 	using_fat32_or_exfat = (da->get_filesystem_type() == "FAT32" || da->get_filesystem_type() == "exFAT");
 
 	scan_total = 0;
-	MessageQueue::get_singleton()->push_callable(callable_mp(ResourceUID::get_singleton(), &ResourceUID::clear)); // Will be updated on scan.
+	callable_mp(ResourceUID::get_singleton(), &ResourceUID::clear).call_deferred(); // Will be updated on scan.
 	ResourceSaver::set_get_resource_id_for_path(_resource_saver_get_resource_id_for_path);
 }
 
